@@ -1,0 +1,115 @@
+From d516d36f746a8bf7ec58b6a561c908a431d4bf4b Mon Sep 17 00:00:00 2001
+From: letress <212964567+letress@users.noreply.github.com>
+Date: Tue, 10 Nov 2026 23:45:45 +0100
+Subject: [PATCH 1/2] board: motorola: Add Motorola One Action (troika)
+
+Add a board file and defconfig for the Motorola One Action (XT2013,
+Exynos9609, handled as Exynos9610).
+
+The stock bootloader (MBM-2.2) reserves 64 MiB at 0xec000000 for its
+framebuffer but scans out from 0xed000000: that is the buffer address
+of the one active DPU DMA channel, read back on hardware, and drawing
+at 0xec000000 has no visible effect. The panel is 1080x2520, ARGB8888.
+
+The load addresses are the ones used by gta4xl. They lie in the first
+RAM bank the bootloader reports (0x80000000-0xbc7fffff), and 0x84000000
+is where the bootloader itself places the ramdisk.
+
+The stock kernel is an uncompressed arm64 Image, so the Linux image
+header is enabled and gzip compression is not.
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+---
+ board/Kconfig                 |  7 +++++++
+ board/Makefile                |  1 +
+ board/motorola/board-troika.c | 35 +++++++++++++++++++++++++++++++++++
+ configs/troika_defconfig      |  8 ++++++++
+ 4 files changed, 51 insertions(+)
+ create mode 100644 board/motorola/board-troika.c
+ create mode 100644 configs/troika_defconfig
+
+diff --git a/board/Kconfig b/board/Kconfig
+index e99b95f..2b0f134 100644
+--- a/board/Kconfig
++++ b/board/Kconfig
+@@ -109,6 +109,13 @@ menu "Device Support"
+ 		help
+ 			Say Y if you want to include support for the Lenovo Vibe P1ma40
+ 
++	config MOTOROLA_TROIKA
++		bool "Support for Motorola One Action"
++		default n
++		depends on EXYNOS_9610
++		help
++		  Say Y if you want to include support for Motorola One Action
++
+ 	config MOTOROLA_TUNDRA
+ 		bool "Support for Motorola Edge 30 fusion"
+ 		default n
+diff --git a/board/Makefile b/board/Makefile
+index 3933fd5..217ff33 100644
+--- a/board/Makefile
++++ b/board/Makefile
+@@ -12,6 +12,7 @@ lib-$(CONFIG_INFINIX_X6710) += infinix/board-x6710.o
+ lib-$(CONFIG_ITEL_P682LPN) += itel/board-p682lpn.o
+ lib-$(CONFIG_LENOVO_TB373FU) += lenovo/board-tb373fu.o
+ lib-$(CONFIG_LENOVO_P1MA40) += lenovo/board-p1ma40.o
++lib-$(CONFIG_MOTOROLA_TROIKA) += motorola/board-troika.o
+ lib-$(CONFIG_MOTOROLA_TUNDRA) += motorola/board-tundra.o
+ lib-$(CONFIG_NOKIA_ESSENTIAL) += nokia/board-essential.o
+ lib-$(CONFIG_NOTHING_FROGGERPRO) += nothing/board-froggerpro.o
+diff --git a/board/motorola/board-troika.c b/board/motorola/board-troika.c
+new file mode 100644
+index 0000000..6e2685b
+--- /dev/null
++++ b/board/motorola/board-troika.c
+@@ -0,0 +1,35 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * Motorola One Action (troika, XT2013)
++ */
++#include <board.h>
++#include <util.h>
++#include <drivers/framework.h>
++#include <lib/simplefb.h>
++
++/*
++ * Framebuffer left running by the stock bootloader. The vendor kernel
++ * reserves 64 MiB at 0xec000000 for it ("bootloader_fb"), but the
++ * bootloader scans out from 0xed000000: that is the buffer address of the
++ * one active DPU DMA channel (G0), read on hardware with the diagnostic
++ * board. Drawing at 0xec000000 has no visible effect.
++ */
++static struct video_info troika_fb = {
++	.format = FB_FORMAT_ARGB8888,
++	.width = 1080,
++	.height = 2520,
++	.stride = 4,
++	.scale = 2,
++	.address = (void *)0xed000000
++};
++
++static const struct device troika_devices[] = {
++	{ "simplefb", &troika_fb, "fb" },
++};
++
++struct board_data board_ops = {
++	.name = "motorola-troika",
++	.devices = troika_devices,
++	.num_devices = ARRAY_SIZE(troika_devices),
++	.quirks = 0
++};
+diff --git a/configs/troika_defconfig b/configs/troika_defconfig
+new file mode 100644
+index 0000000..5d0f071
+--- /dev/null
++++ b/configs/troika_defconfig
+@@ -0,0 +1,8 @@
++CONFIG_POSITION_INDEPENDENT=y
++CONFIG_LINUX_KRNL_HEADER_IMG=y
++# CONFIG_COMPRESS_GZIP is not set
++CONFIG_EXYNOS_9610=y
++CONFIG_MOTOROLA_TROIKA=y
++CONFIG_TEXT_BASE=0x88000000
++CONFIG_PAYLOAD_ENTRY=0x90000000
++CONFIG_RAMDISK_ENTRY=0x84000000

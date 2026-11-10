@@ -1,0 +1,292 @@
+From b73303f41b22bc2df0c669e8216f03d307ed8ab5 Mon Sep 17 00:00:00 2001
+From: letress <212964567+letress@users.noreply.github.com>
+Date: Tue, 10 Nov 2026 23:45:52 +0100
+Subject: [PATCH 2/2] Inherit initrd and bootargs from the previous
+ bootloader's device tree
+
+Some bootloaders insist on their own device tree: on Motorola troika
+the boot image must carry the vendor DTB in the "second" slot or
+"fastboot boot" fails, so the mainline DTB has to be embedded here.
+The bootloader still loads the ramdisk from the boot image and builds
+the kernel command line, and the only place it reports the ramdisk size
+and the command line is the device tree it passes in x0. That pointer
+was dropped on entry.
+
+Keep x0 across start-up (arm64) and add PREV_BL_FDT_INHERIT: after the
+embedded DTB has been opened for patching, copy linux,initrd-start and
+linux,initrd-end from the previous device tree and append its bootargs
+to the embedded ones. "console=null" and "console=ram", which the
+vendor setup uses to silence its kernel, are dropped.
+
+With RAMDISK_NO_COPY this lets a distribution generate its initramfs
+independently of the uniLoader build. Use both in troika_defconfig.
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+---
+ arch/aarch64/start.S     |   6 ++
+ configs/troika_defconfig |   2 +
+ include/main/prev-fdt.h  |  10 ++++
+ lib/Kconfig              |  10 ++++
+ main/Makefile            |   1 +
+ main/boot-fdt.c          |  13 +++-
+ main/boot.c              |   3 +
+ main/prev-fdt.c          | 126 +++++++++++++++++++++++++++++++++++++++
+ 8 files changed, 168 insertions(+), 3 deletions(-)
+ create mode 100644 include/main/prev-fdt.h
+ create mode 100644 main/prev-fdt.c
+
+diff --git a/arch/aarch64/start.S b/arch/aarch64/start.S
+index de454f9..8bc7100 100644
+--- a/arch/aarch64/start.S
++++ b/arch/aarch64/start.S
+@@ -23,6 +23,9 @@ _stack_size:
+ .align 4
+ #endif
+ ENTRY(_start)
++	/* Keep the device tree pointer of the previous bootloader */
++	mov	x19, x0
++
+ 	/* Set up the base address for the stack */
+ 	adrp    x0, _stack_end      /* Load page of the _stack_end symbol */
+ 	add     x0, x0, #:lo12:_stack_end  /* Add the offset within the page */
+@@ -41,6 +44,9 @@ ENTRY(_start)
+ 	str     xzr, [x0], #8
+ 	b       1b
+ 2:
++	adrp	x0, prev_bl_fdt
++	add	x0, x0, #:lo12:prev_bl_fdt
++	str	x19, [x0]
+ 
+ 	/* Fall through */
+ 	adrp    x0, dtb             /* Load page of dtb */
+diff --git a/configs/troika_defconfig b/configs/troika_defconfig
+index 5d0f071..4816120 100644
+--- a/configs/troika_defconfig
++++ b/configs/troika_defconfig
+@@ -6,3 +6,5 @@ CONFIG_MOTOROLA_TROIKA=y
+ CONFIG_TEXT_BASE=0x88000000
+ CONFIG_PAYLOAD_ENTRY=0x90000000
+ CONFIG_RAMDISK_ENTRY=0x84000000
++CONFIG_RAMDISK_NO_COPY=y
++CONFIG_PREV_BL_FDT_INHERIT=y
+diff --git a/include/main/prev-fdt.h b/include/main/prev-fdt.h
+new file mode 100644
+index 0000000..3359167
+--- /dev/null
++++ b/include/main/prev-fdt.h
+@@ -0,0 +1,10 @@
++// SPDX-License-Identifier: GPL-2.0-only
++#ifndef PREV_FDT_H_
++#define PREV_FDT_H_
++
++/* Device tree pointer the previous bootloader passed in x0 (arm64) */
++extern void *prev_bl_fdt;
++
++int prev_fdt_inherit(const void *prev, void *buf);
++
++#endif // PREV_FDT_H_
+diff --git a/lib/Kconfig b/lib/Kconfig
+index e750fff..e667231 100644
+--- a/lib/Kconfig
++++ b/lib/Kconfig
+@@ -26,6 +26,16 @@ menu "Libraries"
+ 		help
+ 		  This option specifies the size (in bytes) of the buffer used for DTB modifying. The default value of 500 KB should be sufficient even for downstream device trees.
+ 
++	config PREV_BL_FDT_INHERIT
++		bool "Inherit initrd and bootargs from the previous bootloader"
++		default n
++		depends on LIBFDT
++		help
++		  Say Y if the previous bootloader loads the ramdisk and builds
++		  the kernel command line itself, and passes both in its own
++		  device tree. The initrd location and the command line are then
++		  copied from that device tree into the embedded one.
++
+ 	config FDT_BUF_ADDR
+ 		hex "Address of the buffer for the Flattened Device Tree"
+ 		default 0x0
+diff --git a/main/Makefile b/main/Makefile
+index cfc56cf..9c0ffa7 100644
+--- a/main/Makefile
++++ b/main/Makefile
+@@ -1,2 +1,3 @@
+ obj-y := boot.o main.o
+ obj-$(CONFIG_LIBFDT) += boot-fdt.o
++obj-$(CONFIG_PREV_BL_FDT_INHERIT) += prev-fdt.o
+diff --git a/main/boot-fdt.c b/main/boot-fdt.c
+index 00d1874..67dd363 100644
+--- a/main/boot-fdt.c
++++ b/main/boot-fdt.c
+@@ -5,6 +5,7 @@
+ 
+ #include <drivers/ramdisk-handler.h>
+ #include <lib/debug.h>
++#include <main/prev-fdt.h>
+ 
+ #if CONFIG_FDT_BUF_ADDR
+ #define fdt_buf ((char *)CONFIG_FDT_BUF_ADDR)
+@@ -17,8 +18,14 @@ void patch_dtb(void** dt)
+ 	int ret;
+ 
+ 	ret = ramdisk_handler_patch_dtb(*dt, fdt_buf, CONFIG_FDT_BUF_SIZE);
+-	if (ret != 0)
++	if (ret != 0) {
+ 		printk(KERN_ERR, "failed to patch dtb\n");
+-	else
+-		*dt = fdt_buf;
++		return;
++	}
++
++#ifdef CONFIG_PREV_BL_FDT_INHERIT
++	prev_fdt_inherit(prev_bl_fdt, fdt_buf);
++#endif
++
++	*dt = fdt_buf;
+ }
+diff --git a/main/boot.c b/main/boot.c
+index 9fa3010..df07c5c 100644
+--- a/main/boot.c
++++ b/main/boot.c
+@@ -9,6 +9,9 @@
+ #include <main/boot-fdt.h>
+ #include <string.h>
+ 
++/* Set by the arch start code; see include/main/prev-fdt.h */
++void *prev_bl_fdt;
++
+ void boot_kernel(void* dt, void* kernel, void* ramdisk)
+ {
+ #ifdef CONFIG_LIBFDT
+diff --git a/main/prev-fdt.c b/main/prev-fdt.c
+new file mode 100644
+index 0000000..d56ad8b
+--- /dev/null
++++ b/main/prev-fdt.c
+@@ -0,0 +1,126 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/*
++ * Take over what only the previous bootloader knows from the device tree
++ * it passed in x0: where it loaded the ramdisk and the kernel command line.
++ *
++ * Needed when the previous bootloader insists on its own device tree (so
++ * the one given to the kernel has to be embedded here) but still loads
++ * the ramdisk and builds the command line from the boot image itself.
++ */
++
++#include <lib/debug.h>
++#include <lib/libfdt/libfdt.h>
++#include <main/prev-fdt.h>
++#include <string.h>
++
++#define CMDLINE_MAX	4096
++
++/*
++ * Console settings the previous bootloader forces for the vendor kernel;
++ * they would silence the kernel we start.
++ */
++static const char *const dropped_args[] = {
++	"console=null",
++	"console=ram",
++};
++
++static int arg_is_dropped(const char *arg, int len)
++{
++	unsigned int i;
++
++	for (i = 0; i < sizeof(dropped_args) / sizeof(dropped_args[0]); i++) {
++		if ((int)strlen(dropped_args[i]) == len &&
++		    !strncmp(arg, dropped_args[i], len))
++			return 1;
++	}
++
++	return 0;
++}
++
++/* Append the space separated arguments of @src to @dst, minus the dropped ones */
++static int append_args(char *dst, int pos, const char *src, int srclen, int filter)
++{
++	int i = 0;
++
++	while (i < srclen && src[i]) {
++		int start, len;
++
++		while (i < srclen && src[i] == ' ')
++			i++;
++		start = i;
++		while (i < srclen && src[i] && src[i] != ' ')
++			i++;
++		len = i - start;
++		if (!len || (filter && arg_is_dropped(src + start, len)))
++			continue;
++		if (pos + len + 2 > CMDLINE_MAX)
++			break;
++		if (pos)
++			dst[pos++] = ' ';
++		memcpy(dst + pos, src + start, len);
++		pos += len;
++	}
++	dst[pos] = '\0';
++
++	return pos;
++}
++
++int prev_fdt_inherit(const void *prev, void *buf)
++{
++	static const char *const initrd_props[] = {
++		"linux,initrd-start",
++		"linux,initrd-end",
++	};
++	static char cmdline[CMDLINE_MAX];
++	const void *prop;
++	unsigned int i;
++	int src, dst, len, pos, ret;
++
++	if (!prev || fdt_check_header(prev)) {
++		printk(KERN_WARNING, "no device tree from the previous bootloader\n");
++		return -1;
++	}
++
++	src = fdt_path_offset(prev, "/chosen");
++	dst = fdt_path_offset(buf, "/chosen");
++	if (src < 0 || dst < 0) {
++		printk(KERN_WARNING, "previous device tree: no /chosen\n");
++		return -1;
++	}
++
++	for (i = 0; i < sizeof(initrd_props) / sizeof(initrd_props[0]); i++) {
++		prop = fdt_getprop(prev, src, initrd_props[i], &len);
++		if (!prop || (len != 4 && len != 8)) {
++			printk(KERN_WARNING, "previous device tree: no %s\n",
++			       initrd_props[i]);
++			continue;
++		}
++		ret = fdt_setprop(buf, dst, initrd_props[i], prop, len);
++		if (ret < 0) {
++			printk(KERN_ERR, "failed to set %s: %s\n",
++			       initrd_props[i], fdt_strerror(ret));
++			return ret;
++		}
++		printk(KERN_INFO, "inherited %s\n", initrd_props[i]);
++	}
++
++	/* Our own bootargs first, then the previous bootloader's */
++	pos = 0;
++	prop = fdt_getprop(buf, dst, "bootargs", &len);
++	if (prop && len > 0)
++		pos = append_args(cmdline, pos, prop, len, 0);
++	prop = fdt_getprop(prev, src, "bootargs", &len);
++	if (prop && len > 0)
++		pos = append_args(cmdline, pos, prop, len, 1);
++	if (!pos)
++		return 0;
++
++	ret = fdt_setprop(buf, dst, "bootargs", cmdline, pos + 1);
++	if (ret < 0) {
++		printk(KERN_ERR, "failed to set bootargs: %s\n", fdt_strerror(ret));
++		return ret;
++	}
++	printk(KERN_INFO, "inherited bootargs (%d bytes)\n", pos);
++
++	return 0;
++}

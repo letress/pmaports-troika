@@ -2,9 +2,9 @@
 pkgname=device-motorola-troika
 pkgdesc="Motorola One Action"
 pkgver=1
-pkgrel=0
+pkgrel=1
 url="https://nura.eco"
-license="MIT"
+license="MIT AND GPL-2.0-only"
 arch="aarch64"
 options="!check !archcheck"
 depends="
@@ -13,7 +13,16 @@ depends="
 	postmarketos-base
 "
 makedepends="devicepkg-dev"
-source="deviceinfo"
+# exynos9610-troika-vendor.dtb is the unmodified exynos9610.dtb of the vendor
+# kernel (GPL-2.0), as shipped in the "second" slot of the LineageOS 22 boot
+# image; source: github.com/LineageOS/android_kernel_motorola_exynos9610 at
+# 809b8162409a, arch/arm64/boot/dts/exynos/exynos9610.dts. The bootloader does
+# not start a boot image without it. Building it from source instead of
+# shipping the blob is left for later.
+source="
+	deviceinfo
+	exynos9610-troika-vendor.dtb
+"
 
 build() {
 	devicepkg_build $startdir $pkgname
@@ -21,8 +30,12 @@ build() {
 
 package() {
 	devicepkg_package $startdir $pkgname
+
+	install -Dm644 "$srcdir"/exynos9610-troika-vendor.dtb \
+		-t "$pkgdir"/boot/dtbs/vendor
 }
 
 sha512sums="
-e40edce2b674ff7a54d32d1778013e5c356d78f2389ef872cf1f6b7f1badfd27d52d51a69d586dd1dac0a8054d0166d5c8fb060039cb92330bfc0e4d1f7a104b  deviceinfo
+cba5d77dd6b2164d3e9cd509b162f9eed2adfa34a4c4a01946df3a099aa6a976fda1478965ee23912ca938d4820db94fa7bb7970d95673c476d88db10d52c259  deviceinfo
+b3efad9d5fb5f7910cf2bd70cf3c22970e9c5728f823cf15c6ebde93b5096d06f0033877acd0ea0dd3c2bd03e41814f8c9b58c28e8d52ce94b185e230278e617  exynos9610-troika-vendor.dtb
 "

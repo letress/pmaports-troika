@@ -7,7 +7,6 @@ deviceinfo_name="Motorola One Action"
 deviceinfo_manufacturer="Motorola"
 deviceinfo_codename="motorola-troika"
 deviceinfo_year="2019"
-deviceinfo_dtb="exynos/exynos9610-troika"
 deviceinfo_arch="aarch64"
 
 # Device related
@@ -15,14 +14,23 @@ deviceinfo_chassis="handset"
 deviceinfo_external_storage="true"
 
 # Bootloader related
-# Values from 'pmbootstrap bootimg_analyze' on the boot partition
-# (header v1, DTB in the "second" slot).
+# Layout from 'pmbootstrap bootimg_analyze' on the boot partition: header v1
+# with a device tree in the "second" slot.
+#
+# The bootloader refuses a boot image whose "second" device tree is not the
+# vendor one ('fastboot boot' fails), so that is what goes there. The kernel
+# slot holds uniLoader, which carries the mainline kernel and device tree and
+# takes the initramfs location and the command line from the bootloader.
+deviceinfo_dtb="vendor/exynos9610-troika-vendor"
+deviceinfo_bootimg_dtb_second="true"
+deviceinfo_uboot_boardname="motorola-troika"
+deviceinfo_bootimg_override_payload="uniLoader"
+
 deviceinfo_flash_method="fastboot"
-deviceinfo_kernel_cmdline="loop.max_part=7 androidboot.boot_devices=13520000.ufs"
+deviceinfo_kernel_cmdline="console=tty0"
 deviceinfo_generate_bootimg="true"
 deviceinfo_flash_pagesize="2048"
 deviceinfo_bootimg_qcdt="false"
-deviceinfo_bootimg_dtb_second="true"
 deviceinfo_header_version="1"
 deviceinfo_flash_offset_base="0x10000000"
 deviceinfo_flash_offset_kernel="0x00008000"
