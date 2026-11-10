@@ -1,0 +1,101 @@
+# Reference: <https://nura.eco/vendorkernel>
+# Kernel config based on: device/testing/linux-postmarketos-exynos850
+pkgname=linux-motorola-troika-mainline
+pkgver=7.3.3
+pkgrel=0
+pkgdesc="Mainline kernel for Motorola One Action (Exynos 9609)"
+arch="aarch64"
+_carch="arm64"
+_flavor="motorola-troika-mainline"
+url="https://kernel.org"
+license="GPL-2.0-only"
+options="!strip !check !tracedeps pmb:cross-native"
+makedepends="
+	bash
+	bc
+	bison
+	elfutils-dev
+	findutils
+	flex
+	linux-headers
+	openssl-dev
+	perl
+	postmarketos-installkernel
+	python3
+"
+
+# Source
+_config="config-$_flavor.$arch"
+_kmajver="${pkgver%%.*}"
+source="
+	https://cdn.kernel.org/pub/linux/kernel/v$_kmajver.x/linux-$pkgver.tar.xz
+	$_config
+	0001-dt-bindings-arm-samsung-Document-gta4xl-board-bindin.patch
+	0002-arm64-dts-exynos-Add-initial-support-for-the-Exynos9.patch
+	0003-arm64-dts-exynos-Add-initial-support-for-Samsung-Gal.patch
+	0004-dt-bindings-arm-samsung-Fix-indentation-and-order-of.patch
+	0005-arm64-dts-exynos9610-Fix-misspelled-samsung-pin-pud-.patch
+	0006-arm64-dts-exynos9610-Use-two-interrupt-cells-for-the.patch
+	0007-arm64-dts-exynos9610-Rename-xclkout-pin-groups-to-ma.patch
+	0008-arm64-dts-exynos9610-Fix-GIC-unit-address.patch
+	0009-arm64-dts-exynos9610-Use-GIC-defines-for-the-PMU-int.patch
+	0010-arm64-dts-exynos9610-Move-ramoops-to-the-gta4xl-boar.patch
+	0011-arm64-dts-exynos9610-Move-the-ABOX-reservation-to-gt.patch
+	0012-arm64-dts-exynos9610-Set-the-oscillator-frequency-in.patch
+	0013-arm64-dts-exynos9610-gta4xl-Add-the-required-model-p.patch
+	0014-arm64-dts-exynos9610-gta4xl-Use-lowercase-hex-in-the.patch
+	0015-arm64-dts-exynos9610-gta4xl-Drop-unit-address-from-t.patch
+	0016-dt-bindings-arm-samsung-Document-Motorola-One-Action.patch
+	0017-arm64-dts-exynos-Add-Motorola-One-Action-troika.patch
+"
+builddir="$srcdir/linux-$pkgver"
+
+prepare() {
+	default_prepare
+	cp "$srcdir/$_config" .config
+}
+
+build() {
+	unset LDFLAGS
+	make ARCH="$_carch" CC="${CC:-gcc}" \
+		KBUILD_BUILD_VERSION="$((pkgrel + 1))-postmarketOS"
+}
+
+package() {
+	mkdir -p "$pkgdir"/boot
+
+	# The stock kernel is an uncompressed Image; whether the bootloader
+	# accepts a compressed one is unknown.
+	make install modules_install dtbs_install \
+		ARCH="$_carch" \
+		INSTALL_PATH="$pkgdir"/boot \
+		INSTALL_MOD_PATH="$pkgdir"/usr \
+		INSTALL_MOD_STRIP=1 \
+		INSTALL_DTBS_PATH="$pkgdir"/boot/dtbs
+	rm -f "$pkgdir"/usr/lib/modules/*/build "$pkgdir"/usr/lib/modules/*/source
+
+	install -D "$builddir"/include/config/kernel.release \
+		"$pkgdir"/usr/share/kernel/$_flavor/kernel.release
+}
+
+sha512sums="
+6308b031942c3c147d6ff0d81611800078eb1de3383206e745b5c3e6a2f3b3cf812c4e7697017bfdb7c5b3dcd96cc15e0e082123b6130fc736a74cf38c81e672  linux-7.3.3.tar.xz
+a82ec631583ce7238609547114e9195bf498d7652ca87ac1dacde235923f1439f3bcc5c03cf5708a99e155560ad4e84a40873c547039c73b5a5c4247e92dfefd  config-motorola-troika-mainline.aarch64
+453e75d0959f78d874f6e8ddef02fd9c1a16f1a2dfbf900eea1fcf575f32c7a8a4c0bd51204e579efaef4fb4a9bf24c87efd36e49c06036efaceadc0426f0e3e  0001-dt-bindings-arm-samsung-Document-gta4xl-board-bindin.patch
+5a6738ab65638443926a8937534ac09cb8d11ed71ddb8f4fcc7fe1eccf37c73881965674c0d29d500332b78185575de09d25c48bf2aa55be1ce9f8d0bc9cb716  0002-arm64-dts-exynos-Add-initial-support-for-the-Exynos9.patch
+62846297c35ac6b6ca332c486df5e4e23e794e7ffe8e5ffbe4dcd05d74f900226fd5f09d93465e895d226ccb661973c3030cd159e244a1ea40db4ca89ff6f34b  0003-arm64-dts-exynos-Add-initial-support-for-Samsung-Gal.patch
+d0c10a9a979c83769b971a289b3a674e6ba525bccc459043737329604486b4d50cecb33e2a7ad5718e1343e7e29dd15b2526ebf6fe8ce7cd9ffd8f4e2aa1e31b  0004-dt-bindings-arm-samsung-Fix-indentation-and-order-of.patch
+d7b7f26221d474b5988dc472f693a3d95caf94bc25782c0ab5a77fd12361078d12ef4be6db1d2d4c82f21d451b6ce5fcb33f0ad707f7aa1a4254462e92698adc  0005-arm64-dts-exynos9610-Fix-misspelled-samsung-pin-pud-.patch
+bbdc66c3e4367c9c47e815f5605a6600700a955999121e49daacb8a90f570ba9fbcd1ef908315cfce09dc985cc13f25e7b758a2081be7f73b401a58dc241b390  0006-arm64-dts-exynos9610-Use-two-interrupt-cells-for-the.patch
+8294e1ce066bdb6b154595b193588e672c02ecbfaf0445341785ecea38019d69f1e9b8567958fa172e58ea4efdef95ff24c9fada981213bf39bebad6a37f7905  0007-arm64-dts-exynos9610-Rename-xclkout-pin-groups-to-ma.patch
+a1ef9110743b906a8db18731015abc386bc0b4a8889a216dc0d11351f92e8d8dd91238d714064a26695a2820dbdc3d02b21a273125ec8ea31cccd187dc2560b0  0008-arm64-dts-exynos9610-Fix-GIC-unit-address.patch
+937e91294b3779b01860b0d18e47ca5a32e2090b01487d374dd875e642899d87abcf27f2c6343af5638f946450291f9dd4ef19c847dd75096caa49266ff00c94  0009-arm64-dts-exynos9610-Use-GIC-defines-for-the-PMU-int.patch
+012fadda300be588cb7ae325719f494e4a040c964ba2e6f3b742c821549785fcd6138aef9b25017dbb59b176ac79301b5fd84bf2e28aedd50dcb6b6bfbd91516  0010-arm64-dts-exynos9610-Move-ramoops-to-the-gta4xl-boar.patch
+7f2f07b3ce48630aa07b29ab25358c673280fff642a2f7cda3553ad13fe2d6877187d2deb6022c8efc5792db4626ca5eddd4f9554a60251833d0ef2c0cae2169  0011-arm64-dts-exynos9610-Move-the-ABOX-reservation-to-gt.patch
+6baf964b7cd05d4407accbcd1a1ca8d633ef9f3691c4cfc1cb53ee8ec5414d9dd94d29bbba7fe2becb55d32bdf36f98525528bed4b208f483c8104d40e164b8c  0012-arm64-dts-exynos9610-Set-the-oscillator-frequency-in.patch
+34c68d7e87cd4e2734f20f1db5750971e322deace484ebed750349de1c1ab52893c26a6a6cd50bfa3c8dbd5c3bf104fbea4ac93df64469cf67a87d1af998dfc4  0013-arm64-dts-exynos9610-gta4xl-Add-the-required-model-p.patch
+61d6d413b6dda420ac24f449f6ca4a9108ce3825e7cdb6dad5b11d7485b3c855282237eb4ef82be8210b1a5113a66ce96447ac34be999c25ca91a37ef64ba4b4  0014-arm64-dts-exynos9610-gta4xl-Use-lowercase-hex-in-the.patch
+466ab968dc7b02b45094432e4d3476ffda29eb9ec28daaa99c6c96c464a013aec851927f98225ac818c1894b865bc575b1ba19491f97e7080a31ebafa115fd3c  0015-arm64-dts-exynos9610-gta4xl-Drop-unit-address-from-t.patch
+b3ff2e220cb21de56c379e9f430a65e3bda91f68dc13d73c1cb9b5b3fb9e927f166ed43dc81c2546e656e98293057c3dd6944a5e44ed9eeb1fe0d51a98ff0a5a  0016-dt-bindings-arm-samsung-Document-Motorola-One-Action.patch
+7ddb017ca4f31ac678cf0d8d31867a5f80b0ac58cfd00c4c0151a41507aae407626d1f8be4dbc94263e1398eb8a7d3bcadfbabcf4a60065e47007d7df8d52589  0017-arm64-dts-exynos-Add-Motorola-One-Action-troika.patch
+"

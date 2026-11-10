@@ -1,0 +1,28 @@
+# Reference: <https://nura.eco/devicepkg>
+pkgname=device-motorola-troika
+pkgdesc="Motorola One Action"
+pkgver=1
+pkgrel=0
+url="https://nura.eco"
+license="MIT"
+arch="aarch64"
+options="!check !archcheck"
+depends="
+	android-tools-mkbootimg
+	linux-motorola-troika-mainline
+	postmarketos-base
+"
+makedepends="devicepkg-dev"
+source="deviceinfo"
+
+build() {
+	devicepkg_build $startdir $pkgname
+}
+
+package() {
+	devicepkg_package $startdir $pkgname
+}
+
+sha512sums="
+e40edce2b674ff7a54d32d1778013e5c356d78f2389ef872cf1f6b7f1badfd27d52d51a69d586dd1dac0a8054d0166d5c8fb060039cb92330bfc0e4d1f7a104b  deviceinfo
+"
