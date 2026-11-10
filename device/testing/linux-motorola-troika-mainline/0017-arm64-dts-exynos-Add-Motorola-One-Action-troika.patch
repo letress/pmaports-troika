@@ -1,4 +1,4 @@
-From d6ace9a1fea0c42956201d37f998b4d2719648db Mon Sep 17 00:00:00 2001
+From 2b2aa00fe282c405e5d629d050849c77229f46b4 Mon Sep 17 00:00:00 2001
 From: letress <212964567+letress@users.noreply.github.com>
 Date: Tue, 10 Nov 2026 15:39:08 +0100
 Subject: [PATCH 17/17] arm64: dts: exynos: Add Motorola One Action (troika)
@@ -23,8 +23,10 @@ Where the values come from:
 - The framebuffer is the vendor "bootloader_fb" region at 0xec000000
   (64 MiB). The panel is 1080x2520 (Himax HX83112A on the unit the
   values were read from, Novatek NT36672A on others; same resolution).
-  The pixel format is assumed to be a8r8g8b8 and still needs to be
-  confirmed on hardware.
+  Address, size and stride match what the bootloader programmed into
+  the DPU: the active DMA channel (G0) reads from 0xec000000 with a
+  1080x2520 source and image size. The format was checked by drawing
+  known colours into the buffer from a second-stage loader.
 - Keys are gpa1-5 (volume up), gpa1-6 (volume down) and gpa1-7 (power),
   as in the vendor tree. All three lines read high when idle, so they
   are active low.
@@ -39,8 +41,8 @@ known whether firmware keeps writing there, so keep the kernel out.
 Co-Authored-By: Claude <noreply@anthropic.com>
 ---
  arch/arm64/boot/dts/exynos/Makefile           |   1 +
- .../boot/dts/exynos/exynos9610-troika.dts     | 146 ++++++++++++++++++
- 2 files changed, 147 insertions(+)
+ .../boot/dts/exynos/exynos9610-troika.dts     | 142 ++++++++++++++++++
+ 2 files changed, 143 insertions(+)
  create mode 100644 arch/arm64/boot/dts/exynos/exynos9610-troika.dts
 
 diff --git a/arch/arm64/boot/dts/exynos/Makefile b/arch/arm64/boot/dts/exynos/Makefile
@@ -57,10 +59,10 @@ index e18f99a..eae4153 100644
  	exynos990-r8s.dtb               \
 diff --git a/arch/arm64/boot/dts/exynos/exynos9610-troika.dts b/arch/arm64/boot/dts/exynos/exynos9610-troika.dts
 new file mode 100644
-index 0000000..bc19b2e
+index 0000000..25cffea
 --- /dev/null
 +++ b/arch/arm64/boot/dts/exynos/exynos9610-troika.dts
-@@ -0,0 +1,146 @@
+@@ -0,0 +1,142 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * Motorola One Action (troika, XT2013) device tree source
@@ -84,11 +86,7 @@ index 0000000..bc19b2e
 +		#size-cells = <1>;
 +		ranges;
 +
-+		/*
-+		 * Left running by the bootloader. The pixel format is an
-+		 * assumption (same as other Exynos boards) and has not been
-+		 * confirmed on hardware yet.
-+		 */
++		/* Left running by the bootloader */
 +		framebuffer0: framebuffer {
 +			compatible = "simple-framebuffer";
 +			memory-region = <&cont_splash_rmem>;
