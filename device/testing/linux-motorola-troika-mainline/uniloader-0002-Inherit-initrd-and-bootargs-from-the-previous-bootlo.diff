@@ -1,4 +1,4 @@
-From b73303f41b22bc2df0c669e8216f03d307ed8ab5 Mon Sep 17 00:00:00 2001
+From 52f31936e1367e08f65f5705904144b971959010 Mon Sep 17 00:00:00 2001
 From: letress <212964567+letress@users.noreply.github.com>
 Date: Tue, 10 Nov 2026 23:45:52 +0100
 Subject: [PATCH 2/2] Inherit initrd and bootargs from the previous
@@ -16,22 +16,28 @@ Keep x0 across start-up (arm64) and add PREV_BL_FDT_INHERIT: after the
 embedded DTB has been opened for patching, copy linux,initrd-start and
 linux,initrd-end from the previous device tree and append its bootargs
 to the embedded ones. "console=null" and "console=ram", which the
-vendor setup uses to silence its kernel, are dropped.
+vendor setup uses to silence its kernel, are dropped. The arguments are
+copied byte by byte: the assembly memcpy() does unaligned accesses,
+which fault while the MMU is off.
 
 With RAMDISK_NO_COPY this lets a distribution generate its initramfs
 independently of the uniLoader build. Use both in troika_defconfig.
 
+troika's bootloader keeps its device tree at 0x8a000000, so uniLoader
+must not relocate itself over it; troika_defconfig therefore uses
+TEXT_BASE 0x94000000 and PAYLOAD_ENTRY 0x98000000.
+
 Co-Authored-By: Claude <noreply@anthropic.com>
 ---
  arch/aarch64/start.S     |   6 ++
- configs/troika_defconfig |   2 +
- include/main/prev-fdt.h  |  10 ++++
- lib/Kconfig              |  10 ++++
+ configs/troika_defconfig |   6 +-
+ include/main/prev-fdt.h  |  10 +++
+ lib/Kconfig              |  10 +++
  main/Makefile            |   1 +
  main/boot-fdt.c          |  13 +++-
  main/boot.c              |   3 +
- main/prev-fdt.c          | 126 +++++++++++++++++++++++++++++++++++++++
- 8 files changed, 168 insertions(+), 3 deletions(-)
+ main/prev-fdt.c          | 132 +++++++++++++++++++++++++++++++++++++++
+ 8 files changed, 176 insertions(+), 5 deletions(-)
  create mode 100644 include/main/prev-fdt.h
  create mode 100644 main/prev-fdt.c
 
@@ -60,12 +66,17 @@ index de454f9..8bc7100 100644
  	/* Fall through */
  	adrp    x0, dtb             /* Load page of dtb */
 diff --git a/configs/troika_defconfig b/configs/troika_defconfig
-index 5d0f071..4816120 100644
+index 5d0f071..ebc4f60 100644
 --- a/configs/troika_defconfig
 +++ b/configs/troika_defconfig
-@@ -6,3 +6,5 @@ CONFIG_MOTOROLA_TROIKA=y
- CONFIG_TEXT_BASE=0x88000000
- CONFIG_PAYLOAD_ENTRY=0x90000000
+@@ -3,6 +3,8 @@ CONFIG_LINUX_KRNL_HEADER_IMG=y
+ # CONFIG_COMPRESS_GZIP is not set
+ CONFIG_EXYNOS_9610=y
+ CONFIG_MOTOROLA_TROIKA=y
+-CONFIG_TEXT_BASE=0x88000000
+-CONFIG_PAYLOAD_ENTRY=0x90000000
++CONFIG_TEXT_BASE=0x94000000
++CONFIG_PAYLOAD_ENTRY=0x98000000
  CONFIG_RAMDISK_ENTRY=0x84000000
 +CONFIG_RAMDISK_NO_COPY=y
 +CONFIG_PREV_BL_FDT_INHERIT=y
@@ -160,10 +171,10 @@ index 9fa3010..df07c5c 100644
  #ifdef CONFIG_LIBFDT
 diff --git a/main/prev-fdt.c b/main/prev-fdt.c
 new file mode 100644
-index 0000000..d56ad8b
+index 0000000..471c6ed
 --- /dev/null
 +++ b/main/prev-fdt.c
-@@ -0,0 +1,126 @@
+@@ -0,0 +1,132 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +/*
 + * Take over what only the previous bootloader knows from the device tree
@@ -206,7 +217,7 @@ index 0000000..d56ad8b
 +/* Append the space separated arguments of @src to @dst, minus the dropped ones */
 +static int append_args(char *dst, int pos, const char *src, int srclen, int filter)
 +{
-+	int i = 0;
++	int i = 0, j;
 +
 +	while (i < srclen && src[i]) {
 +		int start, len;
@@ -223,8 +234,13 @@ index 0000000..d56ad8b
 +			break;
 +		if (pos)
 +			dst[pos++] = ' ';
-+		memcpy(dst + pos, src + start, len);
-+		pos += len;
++		/*
++		 * Byte by byte on purpose: memcpy() here is the assembly
++		 * routine, which does unaligned accesses, and those fault
++		 * while the MMU is off.
++		 */
++		for (j = 0; j < len; j++)
++			dst[pos++] = src[start + j];
 +	}
 +	dst[pos] = '\0';
 +
@@ -242,6 +258,7 @@ index 0000000..d56ad8b
 +	unsigned int i;
 +	int src, dst, len, pos, ret;
 +
++	printk(KERN_INFO, "previous device tree at 0x%lx\n", (unsigned long)prev);
 +	if (!prev || fdt_check_header(prev)) {
 +		printk(KERN_WARNING, "no device tree from the previous bootloader\n");
 +		return -1;
