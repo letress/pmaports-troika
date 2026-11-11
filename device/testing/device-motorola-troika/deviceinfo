@@ -27,7 +27,10 @@ deviceinfo_uboot_boardname="motorola-troika"
 deviceinfo_bootimg_override_payload="uniLoader"
 
 deviceinfo_flash_method="fastboot"
-deviceinfo_kernel_cmdline="console=tty0"
+# clk_ignore_unused: the clock driver has no consumers for most clocks yet and
+# would switch off PLLs the bootloader left running. The bootloader adds the
+# same argument from the vendor device tree; this makes it explicit.
+deviceinfo_kernel_cmdline="console=tty0 clk_ignore_unused"
 deviceinfo_generate_bootimg="true"
 deviceinfo_flash_pagesize="2048"
 deviceinfo_bootimg_qcdt="false"

@@ -2,7 +2,7 @@
 pkgname=device-motorola-troika
 pkgdesc="Motorola One Action"
 pkgver=1
-pkgrel=1
+pkgrel=2
 url="https://nura.eco"
 license="MIT AND GPL-2.0-only"
 arch="aarch64"
@@ -36,6 +36,6 @@ package() {
 }
 
 sha512sums="
-cba5d77dd6b2164d3e9cd509b162f9eed2adfa34a4c4a01946df3a099aa6a976fda1478965ee23912ca938d4820db94fa7bb7970d95673c476d88db10d52c259  deviceinfo
+a07e2270ae52ec2eed193a7a5e3787db51abc5a79518d626ccfb1ce3da373ff2c780de4fa5b7847b8b255d8469d5d1a70a5e409bf9378d67133ca85bb498d085  deviceinfo
 b3efad9d5fb5f7910cf2bd70cf3c22970e9c5728f823cf15c6ebde93b5096d06f0033877acd0ea0dd3c2bd03e41814f8c9b58c28e8d52ce94b185e230278e617  exynos9610-troika-vendor.dtb
 "
