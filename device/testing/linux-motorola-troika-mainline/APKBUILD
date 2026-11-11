@@ -2,7 +2,7 @@
 # Kernel config based on: device/testing/linux-postmarketos-exynos850
 pkgname=linux-motorola-troika-mainline
 pkgver=7.3.3
-pkgrel=1
+pkgrel=2
 pkgdesc="Mainline kernel for Motorola One Action (Exynos 9609)"
 arch="aarch64"
 _carch="arm64"
@@ -19,6 +19,7 @@ makedepends="
 	flex
 	linux-headers
 	openssl-dev
+	pahole
 	perl
 	postmarketos-installkernel
 	python3
@@ -111,7 +112,7 @@ package() {
 sha512sums="
 6308b031942c3c147d6ff0d81611800078eb1de3383206e745b5c3e6a2f3b3cf812c4e7697017bfdb7c5b3dcd96cc15e0e082123b6130fc736a74cf38c81e672  linux-7.3.3.tar.xz
 6db2c8b0bc6c01c1c315ffb6b53d28ccd01a12020e491274276bbb592a792cca75e0fb2597f1f117b70bc01c61c80758132aee3e0a5ec2829eb89efe16cd772d  uniLoader-30442c60e34de64f4cc7c4236f878e84b4516d86.tar.gz
-a82ec631583ce7238609547114e9195bf498d7652ca87ac1dacde235923f1439f3bcc5c03cf5708a99e155560ad4e84a40873c547039c73b5a5c4247e92dfefd  config-motorola-troika-mainline.aarch64
+112f6398134f6f8dd77e5072d606acacadf65af7a97e5f2c5b9223221088271ee377e1981335c3b830651f388642b3d8871c3b5412db6fb95eaec435e8320b28  config-motorola-troika-mainline.aarch64
 d53bd8ab6d73cb63db995022a6bde6043300c9281384d55f8c42e334f34afbf0eb35f860c7e87dbb71250e1ef6b457620a2f475bac81e7479044cc048e357ddb  uniloader-0001-board-motorola-Add-Motorola-One-Action-troika.diff
 636c621ba98d874375865c5a6be91ae8fdd1acb1b376be7949ee9d3777d5affaa950faaebfd5a2e87136199a96d6910999758598cd0fdc3013d66a4205ed293d  uniloader-0002-Inherit-initrd-and-bootargs-from-the-previous-bootlo.diff
 453e75d0959f78d874f6e8ddef02fd9c1a16f1a2dfbf900eea1fcf575f32c7a8a4c0bd51204e579efaef4fb4a9bf24c87efd36e49c06036efaceadc0426f0e3e  0001-dt-bindings-arm-samsung-Document-gta4xl-board-bindin.patch
