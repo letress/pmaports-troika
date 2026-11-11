@@ -2,7 +2,7 @@
 pkgname=device-motorola-troika
 pkgdesc="Motorola One Action"
 pkgver=1
-pkgrel=2
+pkgrel=3
 url="https://nura.eco"
 license="MIT AND GPL-2.0-only"
 arch="aarch64"
@@ -22,6 +22,7 @@ makedepends="devicepkg-dev"
 source="
 	deviceinfo
 	exynos9610-troika-vendor.dtb
+	60-ufs-readonly.rules
 "
 
 build() {
@@ -33,9 +34,12 @@ package() {
 
 	install -Dm644 "$srcdir"/exynos9610-troika-vendor.dtb \
 		-t "$pkgdir"/boot/dtbs/vendor
+	install -Dm644 "$srcdir"/60-ufs-readonly.rules \
+		-t "$pkgdir"/usr/lib/udev/rules.d
 }
 
 sha512sums="
 a07e2270ae52ec2eed193a7a5e3787db51abc5a79518d626ccfb1ce3da373ff2c780de4fa5b7847b8b255d8469d5d1a70a5e409bf9378d67133ca85bb498d085  deviceinfo
 b3efad9d5fb5f7910cf2bd70cf3c22970e9c5728f823cf15c6ebde93b5096d06f0033877acd0ea0dd3c2bd03e41814f8c9b58c28e8d52ce94b185e230278e617  exynos9610-troika-vendor.dtb
+c0f0c5d2d471fccead816836ec5ac5a5a51fb581671312a9f583d8db60c9697054a29c05ef705d8bc7684969367e532a5fff5c1785d121ceaf5c44cb47e253aa  60-ufs-readonly.rules
 "

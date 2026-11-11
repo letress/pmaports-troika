@@ -1,0 +1,5 @@
+# The internal storage (UFS) still holds the stock Android system and its
+# firmware partitions. Nothing here is meant to write to it yet, so mark its
+# disks read-only as soon as they show up. Drop this rule once the system
+# is to be installed on the internal storage.
+ACTION=="add", SUBSYSTEM=="block", ENV{DEVTYPE}=="disk", SUBSYSTEMS=="platform", KERNELS=="13520000.ufs", RUN+="/usr/bin/blockdev --setro $devnode"
