@@ -1,0 +1,2 @@
+# Give the SCSC WLAN driver the factory address as soon as it is loaded
+ACTION=="add", SUBSYSTEM=="module", KERNEL=="scsc_wlan", RUN+="/usr/libexec/motorola-troika/wlan-mac.sh"

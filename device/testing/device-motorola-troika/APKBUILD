@@ -2,7 +2,7 @@
 pkgname=device-motorola-troika
 pkgdesc="Motorola One Action"
 pkgver=1
-pkgrel=7
+pkgrel=8
 url="https://nura.eco"
 license="MIT AND GPL-2.0-only"
 arch="aarch64"
@@ -30,6 +30,9 @@ source="
 	ufs-readonly.sh
 	phoc.ini
 	phosh-builtin-display.conf
+	70-wlan-mac.rules
+	wlan-mac.sh
+	wlan.conf
 "
 
 build() {
@@ -47,6 +50,14 @@ package() {
 		-t "$pkgdir"/usr/share/mkinitfs/files
 	install -Dm644 "$srcdir"/ufs-readonly.sh \
 		"$pkgdir"/usr/share/mkinitfs/hooks/00-ufs-readonly.sh
+
+	# WLAN: load the driver at boot and give it the factory address
+	install -Dm644 "$srcdir"/wlan.conf \
+		"$pkgdir"/usr/lib/modules-load.d/motorola-troika-wlan.conf
+	install -Dm644 "$srcdir"/70-wlan-mac.rules \
+		-t "$pkgdir"/usr/lib/udev/rules.d
+	install -Dm755 "$srcdir"/wlan-mac.sh \
+		-t "$pkgdir"/usr/libexec/motorola-troika
 }
 
 phosh() {
@@ -66,4 +77,7 @@ d47d85ecf5943f347db85ac1ca9752b739df6606affad4e18d1ff132866e6a2d08fd4d78245b9161
 c7b57aaf77f1cd6486f158d62b4106d415c23be8d7b4f186939a8cc9e0275c2f7b5bdfb50499231bafaa3a6e71969f19f1ed495b2924353a312b5e219938e151  ufs-readonly.sh
 f88e5a2b921c819d569cf7ecff1932a62a8e32ee5b5ee4c2df6e2b73b5819ba77512035ef59a8820e0173d4432fa1fa4562de74360ae5c66b0761e0eeeb33bd7  phoc.ini
 3b1be6678222d0cb492f9e20241957749dfcabd0ba5b412493a43640012a07a40dc29007a063dd72ee76332c3792cff03f4c229d311c043198599e1ef7a83bfb  phosh-builtin-display.conf
+261ea83cec5f69bba594525a3bf9273d14c05e768c76dd29717ef5bdc33941252df59c2815c2bcde42bd758a69ef1eabbe849bd3297fe8623553f688b9c06353  70-wlan-mac.rules
+797e43627f9ba6fe5ddb909a79425a0ef5617070df4573be8eb3f1394c6a8e045a8165ff457f2a97accfaa3185ce8b53d0263648a59287430ba0bf5f60681d5c  wlan-mac.sh
+8d4ab54a7515022a8497f076b9bb5c033006c2bef5287344ff8dfcf0a3000cc049dad82a3f3b9e538289592d7ba6b142179aeb0b20cc5429d4763e334c2aac2a  wlan.conf
 "
