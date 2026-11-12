@@ -1,0 +1,3 @@
+# keeps the internal storage read-only in the initramfs as well:
+/usr/bin/blockdev
+/usr/lib/udev/rules.d/60-ufs-readonly.rules
