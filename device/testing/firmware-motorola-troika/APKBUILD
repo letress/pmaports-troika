@@ -5,16 +5,28 @@ pkgdesc="Firmware for Motorola One Action"
 url="https://github.com/MotorolaMobilityLLC/kernel-slsi"
 arch="aarch64"
 # The ACPM plugin is a binary without source that Motorola publishes in its
-# kernel source tree (firmware/) with no licence notice of its own.
+# kernel source tree (firmware/) with no licence notice of its own. The
+# firmware of the WLBT radio and its configuration are vendor binaries from
+# the vendor partition, mirrored by TheMuppets without a licence notice.
 license="proprietary"
 options="!check !strip !archcheck !tracedeps pmb:cross-native"
 
 # Tag android-11-release-rsbs31.q1-48-36-26
 _commit="d2ce55392f9f8b4efa332ee4ba205fe513c034b4"
 
+# Branch lineage-24.0
+_muppets_commit="2dcb53b9f3379322d0c99aff435da3a03359e8ae"
+_muppets_url="https://github.com/TheMuppets/proprietary_vendor_motorola_exynos9610-common/raw/$_muppets_commit/proprietary/vendor/etc/wifi"
+_wlbt_conf="mx140/conf/leman_s620_troika_dualfem/wlan"
+
 source="
 	exynos9610_acpm_fvp-$_commit.fw::$url/raw/$_commit/firmware/exynos9610_acpm_fvp.fw
 	30-firmware-motorola-troika.files
+	mx140-$_muppets_commit.bin::$_muppets_url/mx140.bin
+	wlan-$_muppets_commit.hcf::$_muppets_url/$_wlbt_conf/wlan.hcf
+	wlan_sw-$_muppets_commit.hcf::$_muppets_url/$_wlbt_conf/wlan_sw.hcf
+	wlan_t-$_muppets_commit.hcf::$_muppets_url/$_wlbt_conf/wlan_t.hcf
+	wlan_t_sw-$_muppets_commit.hcf::$_muppets_url/$_wlbt_conf/wlan_t_sw.hcf
 "
 
 package() {
@@ -25,9 +37,26 @@ package() {
 		"$pkgdir"/usr/lib/firmware/exynos9610_acpm_fvp.fw
 	install -Dm644 "$srcdir"/30-firmware-motorola-troika.files \
 		-t "$pkgdir"/usr/share/mkinitfs/files
+
+	# The firmware of the WLBT radio (WLAN) with the layout of the vendor
+	# partition, where the SCSC driver looks for it. The driver asks for
+	# the configuration next to the firmware as mx140_<name>.hcf.
+	local _wlbt="$pkgdir"/usr/lib/firmware/motorola/troika
+	local f
+	install -Dm644 "$srcdir"/mx140-$_muppets_commit.bin "$_wlbt"/mx140.bin
+	for f in wlan wlan_sw wlan_t wlan_t_sw; do
+		install -Dm644 "$srcdir"/$f-$_muppets_commit.hcf \
+			"$_wlbt"/$_wlbt_conf/$f.hcf
+		ln -s $_wlbt_conf/$f.hcf "$_wlbt"/mx140_$f.hcf
+	done
 }
 
 sha512sums="
 cb5d006eb5ec7775e8436a832d57aa06671cbd2cfb725d8eece8ae8457978db34e290137e44ac53788b46b58159511d840e6c46c77a11c626e244faa2eb59bdf  exynos9610_acpm_fvp-d2ce55392f9f8b4efa332ee4ba205fe513c034b4.fw
 206c055a94ee76353d041bf84237744130ffe9dc676525708fc51f9dc02cb9db62b2f65c815c9aa9a52290c183210483d520507f83103da302aaba329a0275b5  30-firmware-motorola-troika.files
+bf9bf636ab0519ccc97c1785f0492b3ae2d9556aa30f5f7658b78c9186bba397b0c06a8d9777728e430b9a3781dbf9dfda538336fdd78f47a3232d98afffb253  mx140-2dcb53b9f3379322d0c99aff435da3a03359e8ae.bin
+535deed702f2701aa1fe0af58ccff09afe9a3b9495a18af98366f54dac3f6a881b10c839d5bc51ec960213ac1474ee50fb2ddd9e38048b8fe65275848b8bed1f  wlan-2dcb53b9f3379322d0c99aff435da3a03359e8ae.hcf
+0fa06cd81591a2d44873e0c8fb98772dac823ebd9dd87e353b5282af634076b331a28e19a213457515beae3848db437c5db0a2b6f65cea3acbdcc51a1963f0dd  wlan_sw-2dcb53b9f3379322d0c99aff435da3a03359e8ae.hcf
+cc4d86828e07acddf216cc42971bcea64bf428bbf35744e137a367f8d89e65b7944ab1c5bca047b3d3d5a3bea05d0352dc44b9590af2434575b6f13eb523defa  wlan_t-2dcb53b9f3379322d0c99aff435da3a03359e8ae.hcf
+6eacb72fa99e1f6b382c72623af9782361b89a9e0979e08f50ef3d7a6db3d557e48b3fca10b1527f6dd4f2528c3eadc7d2012747b237159e564ffd9052a6647c  wlan_t_sw-2dcb53b9f3379322d0c99aff435da3a03359e8ae.hcf
 "
