@@ -1,0 +1,33 @@
+pkgname=firmware-motorola-troika
+pkgver=1
+pkgrel=0
+pkgdesc="Firmware for Motorola One Action"
+url="https://github.com/MotorolaMobilityLLC/kernel-slsi"
+arch="aarch64"
+# The ACPM plugin is a binary without source that Motorola publishes in its
+# kernel source tree (firmware/) with no licence notice of its own.
+license="proprietary"
+options="!check !strip !archcheck !tracedeps pmb:cross-native"
+
+# Tag android-11-release-rsbs31.q1-48-36-26
+_commit="d2ce55392f9f8b4efa332ee4ba205fe513c034b4"
+
+source="
+	exynos9610_acpm_fvp-$_commit.fw::$url/raw/$_commit/firmware/exynos9610_acpm_fvp.fw
+	30-firmware-motorola-troika.files
+"
+
+package() {
+	# The plugin of the power management firmware that sets frequencies
+	# and voltages. The ACPM driver is built into the kernel and asks for
+	# it before the root filesystem is there, so it goes to the initramfs.
+	install -Dm644 "$srcdir"/exynos9610_acpm_fvp-$_commit.fw \
+		"$pkgdir"/usr/lib/firmware/exynos9610_acpm_fvp.fw
+	install -Dm644 "$srcdir"/30-firmware-motorola-troika.files \
+		-t "$pkgdir"/usr/share/mkinitfs/files
+}
+
+sha512sums="
+cb5d006eb5ec7775e8436a832d57aa06671cbd2cfb725d8eece8ae8457978db34e290137e44ac53788b46b58159511d840e6c46c77a11c626e244faa2eb59bdf  exynos9610_acpm_fvp-d2ce55392f9f8b4efa332ee4ba205fe513c034b4.fw
+206c055a94ee76353d041bf84237744130ffe9dc676525708fc51f9dc02cb9db62b2f65c815c9aa9a52290c183210483d520507f83103da302aaba329a0275b5  30-firmware-motorola-troika.files
+"

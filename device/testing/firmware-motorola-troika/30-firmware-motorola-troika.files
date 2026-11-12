@@ -1,0 +1,2 @@
+# the ACPM driver is built in and loads the plugin before the root is mounted:
+/usr/lib/firmware/exynos9610_acpm_fvp.fw
