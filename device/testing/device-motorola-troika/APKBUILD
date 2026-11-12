@@ -2,7 +2,7 @@
 pkgname=device-motorola-troika
 pkgdesc="Motorola One Action"
 pkgver=1
-pkgrel=5
+pkgrel=6
 url="https://nura.eco"
 license="MIT AND GPL-2.0-only"
 arch="aarch64"
@@ -28,6 +28,7 @@ source="
 	20-ufs-readonly.files
 	ufs-readonly.sh
 	phoc.ini
+	phosh-builtin-display.conf
 "
 
 build() {
@@ -52,6 +53,8 @@ phosh() {
 
 	install -Dm644 "$srcdir"/phoc.ini \
 		"$subpkgdir"/etc/phosh/phoc.ini
+	install -Dm644 "$srcdir"/phosh-builtin-display.conf \
+		"$subpkgdir"/usr/lib/systemd/user/mobi.phosh.Shell.service.d/50-builtin-display.conf
 }
 
 sha512sums="
@@ -61,4 +64,5 @@ c0f0c5d2d471fccead816836ec5ac5a5a51fb581671312a9f583d8db60c9697054a29c05ef705d8b
 d47d85ecf5943f347db85ac1ca9752b739df6606affad4e18d1ff132866e6a2d08fd4d78245b916145ba5479348337cbf8270b65c87f5c03d7e297bbcd0eeaa2  20-ufs-readonly.files
 c7b57aaf77f1cd6486f158d62b4106d415c23be8d7b4f186939a8cc9e0275c2f7b5bdfb50499231bafaa3a6e71969f19f1ed495b2924353a312b5e219938e151  ufs-readonly.sh
 f88e5a2b921c819d569cf7ecff1932a62a8e32ee5b5ee4c2df6e2b73b5819ba77512035ef59a8820e0173d4432fa1fa4562de74360ae5c66b0761e0eeeb33bd7  phoc.ini
+3b1be6678222d0cb492f9e20241957749dfcabd0ba5b412493a43640012a07a40dc29007a063dd72ee76332c3792cff03f4c229d311c043198599e1ef7a83bfb  phosh-builtin-display.conf
 "
