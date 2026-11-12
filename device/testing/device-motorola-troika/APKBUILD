@@ -2,13 +2,14 @@
 pkgname=device-motorola-troika
 pkgdesc="Motorola One Action"
 pkgver=1
-pkgrel=6
+pkgrel=7
 url="https://nura.eco"
 license="MIT AND GPL-2.0-only"
 arch="aarch64"
 options="!check !archcheck"
 depends="
 	android-tools-mkbootimg
+	firmware-motorola-troika
 	linux-motorola-troika-mainline
 	postmarketos-base
 	util-linux-misc
