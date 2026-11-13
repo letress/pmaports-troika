@@ -1,41 +1,39 @@
-# pmaports-troika – balíčky pro Motorola One Action (mainline kernel)
+# pmaports-troika – packages for the Motorola One Action (mainline kernel)
 
-> **English in short:** the postmarketOS/Nura package set for the Motorola One
-> Action (`troika`, Exynos 9609) on a mainline Linux 7.3.3 kernel. This is a
-> clone of [pmaports](https://gitlab.postmarketos.org/postmarketOS/pmaports)
-> with the device packages added on the branch `motorola-troika-mainline`.
-> Documentation of the whole port (Czech): [nura-troika](https://github.com/letress/nura-troika).
-
-Tento repozitář je kopie [pmaports](https://gitlab.postmarketos.org/postmarketOS/pmaports)
-s balíčky pro **Motorola One Action** (`troika`) navrch. Celý projekt, jeho
-stav, dokumentace a nástroje jsou v repozitáři
-**[letress/nura-troika](https://github.com/letress/nura-troika)** – začni tam
+The postmarketOS/Nura package set for the **Motorola One Action** (`troika`,
+Exynos 9609) on a mainline Linux 7.3.3 kernel. This repository is a copy of
+[pmaports](https://gitlab.postmarketos.org/postmarketOS/pmaports) with the
+device packages added on top. The whole project, its status, documentation and
+tools live in
+**[letress/nura-troika](https://github.com/letress/nura-troika)** – start there
 ([`PROGRESS.md`](https://github.com/letress/nura-troika/blob/main/PROGRESS.md),
 [`TESTING.md`](https://github.com/letress/nura-troika/blob/main/TESTING.md)).
+The documentation there is in Czech.
 
-**Stav: rozpracováno, experimentální.** Balíčky se sestavují a výsledný
-systém běží na telefonu (Phosh s Panfrost, WiFi, teploty); nejsou určené pro
-běžné používání. Bez úplné zálohy telefonu nic nezkoušej a nikdy do něj
-nenahrávej (`fastboot flash`); zkouší se jen přes `fastboot boot`.
+**Status: work in progress, experimental.** The packages build and the
+resulting system runs on the phone (Phosh with Panfrost, Wi-Fi, temperatures);
+they are not meant for everyday use. Do not try anything without a full backup
+of the phone, and never flash it (`fastboot flash`); test only with
+`fastboot boot`.
 
-## Balíčky
+## Packages
 
-Všechny jsou v `device/testing/`:
+All are in `device/testing/`:
 
-| Balíček | Co dělá |
+| Package | What it does |
 |---|---|
-| `device-motorola-troika` | informace o zařízení (`deviceinfo`), device tree výrobce pro bootloader, pojistka proti zápisu na UFS v initramfs, načtení WiFi a nastavení adresy MAC, nastavení Phoshe (měřítko, podsvícení) |
-| `linux-motorola-troika-mainline` | kernel 7.3.3 + patche (nastavení v `config-…`), uniLoader s kernelem a device tree, ovladač WiFi Samsung SCSC sestavovaný jako moduly (zdroje v `scsc-wlbt-troika.tar.gz`) |
-| `firmware-motorola-troika` | modul firmwaru ACPM (frekvence a napětí) a firmware rádia WiFi; proprietární soubory výrobce stažené z veřejných zdrojů, přidává je do initramfs |
+| `device-motorola-troika` | device info (`deviceinfo`), the vendor device tree for the bootloader, a write guard for UFS in the initramfs, Wi-Fi module loading and MAC address setup, Phosh settings (scaling, backlight) |
+| `linux-motorola-troika-mainline` | kernel 7.3.3 + patches (configuration in `config-…`), uniLoader with the kernel and device tree, the Samsung SCSC Wi-Fi driver built as modules (sources in `scsc-wlbt-troika.tar.gz`) |
+| `firmware-motorola-troika` | ACPM firmware module (frequencies and voltages) and Wi-Fi radio firmware; proprietary vendor files downloaded from public sources and added to the initramfs |
 
-Patche kernelu se do balíčku zapisují skriptem `tools/update-kernel-pkg.sh`
-z repozitáře [nura-troika](https://github.com/letress/nura-troika)
-(zdroj pravdy je tam, adresář `kernel-patches/`).
+The kernel patches are written into the package by `tools/update-kernel-pkg.sh`
+from the [nura-troika](https://github.com/letress/nura-troika) repository (the
+source of truth is its `kernel-patches/` directory).
 
-## Sestavení
+## Building
 
-Potřebuješ [pmbootstrap](https://wiki.postmarketos.org/wiki/Pmbootstrap)
-nastavený na tuto kopii pmaports (`-p /cesta/k/pmaports-troika`) a zařízení
+You need [pmbootstrap](https://wiki.postmarketos.org/wiki/Pmbootstrap) pointed
+at this copy of pmaports (`-p /path/to/pmaports-troika`) and the device
 `motorola-troika`:
 
 ```sh
@@ -46,20 +44,22 @@ pmbootstrap -p ~/pmaports-troika install
 pmbootstrap -p ~/pmaports-troika export
 ```
 
-Kernel se překládá asi hodinu a půl. Výsledný `boot.img` se **nenahrává**,
-spouští se přes `fastboot boot` a systém běží přes `pmbootstrap netboot serve`
-(telefon ho čte po USB). Přesný postup a kontroly po sestavení jsou v
+The kernel takes about an hour and a half to compile. The resulting `boot.img`
+is **not flashed**; it is started with `fastboot boot` and the system runs
+through `pmbootstrap netboot serve` (the phone reads it over USB). The exact
+procedure and post-build checks are in
 [`TESTING.md`](https://github.com/letress/nura-troika/blob/main/TESTING.md).
 
-## Větve a upstream
+## Branches and upstream
 
-Výchozí větev `motorola-troika-mainline` = upstream pmaports + naše commity
-navrch (adresář `device/testing/*troika*`). Zbytek stromu je beze změny a
-řídí se licencemi postmarketOS.
+The default branch `motorola-troika-mainline` = upstream pmaports + our commits
+on top (the `device/testing/*troika*` directories). The rest of the tree is
+unchanged and follows the postmarketOS licenses.
 
-## Licence
+## License
 
-Balíčky v `device/testing/*troika*` vycházejí z postmarketOS (`MIT` a
-`GPL-2.0-only` podle jednotlivých APKBUILD). Firmware výrobce
-(`firmware-motorola-troika`) je označený `proprietary` a v repozitáři není;
-balíček ho stahuje z veřejných zdrojů a ověřuje kontrolním součtem.
+The packages in `device/testing/*troika*` are derived from postmarketOS (`MIT`
+and `GPL-2.0-only` according to each APKBUILD). The vendor firmware
+(`firmware-motorola-troika`) is marked `proprietary` and is not in the
+repository; the package downloads it from public sources and verifies it with a
+checksum.
