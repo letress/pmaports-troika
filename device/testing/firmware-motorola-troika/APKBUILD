@@ -1,6 +1,6 @@
 pkgname=firmware-motorola-troika
 pkgver=1
-pkgrel=1
+pkgrel=2
 pkgdesc="Firmware for Motorola One Action"
 url="https://github.com/MotorolaMobilityLLC/kernel-slsi"
 arch="aarch64"
@@ -17,6 +17,7 @@ _commit="d2ce55392f9f8b4efa332ee4ba205fe513c034b4"
 # Branch lineage-24.0
 _muppets_commit="2dcb53b9f3379322d0c99aff435da3a03359e8ae"
 _muppets_url="https://github.com/TheMuppets/proprietary_vendor_motorola_exynos9610-common/raw/$_muppets_commit/proprietary/vendor/etc/wifi"
+_muppets_fw="https://github.com/TheMuppets/proprietary_vendor_motorola_exynos9610-common/raw/$_muppets_commit/proprietary/vendor/firmware"
 _wlbt_plat="mx140/conf/leman_s620_troika_dualfem"
 _wlbt_conf="$_wlbt_plat/wlan"
 
@@ -29,6 +30,10 @@ source="
 	wlan_t-$_muppets_commit.hcf::$_muppets_url/$_wlbt_conf/wlan_t.hcf
 	wlan_t_sw-$_muppets_commit.hcf::$_muppets_url/$_wlbt_conf/wlan_t_sw.hcf
 	bt-$_muppets_commit.hcf::$_muppets_url/$_wlbt_plat/bluetooth/bt.hcf
+	calliope_sram-$_muppets_commit.bin::$_muppets_fw/calliope_sram.bin
+	calliope_dram-$_muppets_commit.bin::$_muppets_fw/calliope_dram.bin
+	cs35l41-dsp1-prot-$_muppets_commit.wmfw::$_muppets_fw/cs35l41-dsp1-prot.wmfw
+	cs35l41-dsp1-spk-prot-music-qisheng-$_muppets_commit.bin::$_muppets_fw/cs35l41-dsp1-spk-prot-music-qisheng.bin
 "
 
 package() {
@@ -57,6 +62,19 @@ package() {
 	install -Dm644 "$srcdir"/bt-$_muppets_commit.hcf \
 		"$_wlbt"/$_wlbt_plat/bluetooth/bt.hcf
 	ln -s $_wlbt_plat/bluetooth/bt.hcf "$_wlbt"/mx140_bt.hcf
+
+	# The audio unit (ABOX, Calliope firmware) and the protection tuning of
+	# the speaker amplifier (CS35L41; the speaker of this phone is made by
+	# Qisheng, "music" tuning), both from the vendor partition. The drivers
+	# ask for them by these names.
+	install -Dm644 "$srcdir"/calliope_sram-$_muppets_commit.bin \
+		"$pkgdir"/usr/lib/firmware/calliope_sram.bin
+	install -Dm644 "$srcdir"/calliope_dram-$_muppets_commit.bin \
+		"$pkgdir"/usr/lib/firmware/calliope_dram.bin
+	install -Dm644 "$srcdir"/cs35l41-dsp1-prot-$_muppets_commit.wmfw \
+		"$pkgdir"/usr/lib/firmware/cirrus/cs35l41-dsp1-spk-prot.wmfw
+	install -Dm644 "$srcdir"/cs35l41-dsp1-spk-prot-music-qisheng-$_muppets_commit.bin \
+		"$pkgdir"/usr/lib/firmware/cirrus/cs35l41-dsp1-spk-prot.bin
 }
 
 sha512sums="
@@ -68,4 +86,8 @@ bf9bf636ab0519ccc97c1785f0492b3ae2d9556aa30f5f7658b78c9186bba397b0c06a8d9777728e
 cc4d86828e07acddf216cc42971bcea64bf428bbf35744e137a367f8d89e65b7944ab1c5bca047b3d3d5a3bea05d0352dc44b9590af2434575b6f13eb523defa  wlan_t-2dcb53b9f3379322d0c99aff435da3a03359e8ae.hcf
 6eacb72fa99e1f6b382c72623af9782361b89a9e0979e08f50ef3d7a6db3d557e48b3fca10b1527f6dd4f2528c3eadc7d2012747b237159e564ffd9052a6647c  wlan_t_sw-2dcb53b9f3379322d0c99aff435da3a03359e8ae.hcf
 99837718adfdc8a38249f96f142580cf4e6b664ad5e70acb8aea99a6b9d3d680645ce8ffd4a3331e0b55b741603ef1b267738660724c831f77cb8d835803ba3a  bt-2dcb53b9f3379322d0c99aff435da3a03359e8ae.hcf
+0617acf40c1efdcbad05e9b65803d7083537aef5db01b1ef4f96385fa0a18afbdb46a24e6e6185e46f3ed4a1e515b1518e63a6d6b68839e8ffa0f903cc2b3a1d  calliope_sram-2dcb53b9f3379322d0c99aff435da3a03359e8ae.bin
+6cd4f8dee1bde31d032814d354b5b6abedf67973c03cc3f0f88b8bba605d6209feaa7fd1a026c18cc3b7796a08d3cfdc4bdd8a78c0229a74cd6378ba293efeec  calliope_dram-2dcb53b9f3379322d0c99aff435da3a03359e8ae.bin
+c6cda5d20e4ea25b6603bf54e1daa8665a4a9c9b447ede1bdce30e10bfb022c5044af6f1cd0f6e1d14cc214b7713bab4be70724fd0724450a54469d1dfc0ad39  cs35l41-dsp1-prot-2dcb53b9f3379322d0c99aff435da3a03359e8ae.wmfw
+6e90bafad78792da666a7645d9446a920b5b3ec2b926b3f0b98565554745e7da714147147bd64d557b432c204730aa42ced742298a9be4442aa3e6f953a91c91  cs35l41-dsp1-spk-prot-music-qisheng-2dcb53b9f3379322d0c99aff435da3a03359e8ae.bin
 "
