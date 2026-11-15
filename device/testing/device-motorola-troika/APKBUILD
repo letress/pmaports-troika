@@ -2,7 +2,7 @@
 pkgname=device-motorola-troika
 pkgdesc="Motorola One Action"
 pkgver=1
-pkgrel=8
+pkgrel=9
 url="https://nura.eco"
 license="MIT AND GPL-2.0-only"
 arch="aarch64"
@@ -33,6 +33,9 @@ source="
 	70-wlan-mac.rules
 	wlan-mac.sh
 	wlan.conf
+	bt-addr.sh
+	bluetooth.conf
+	bluetooth-modprobe.conf
 "
 
 build() {
@@ -58,6 +61,14 @@ package() {
 		-t "$pkgdir"/usr/lib/udev/rules.d
 	install -Dm755 "$srcdir"/wlan-mac.sh \
 		-t "$pkgdir"/usr/libexec/motorola-troika
+
+	# Bluetooth: write the factory address, then load the driver at boot
+	install -Dm755 "$srcdir"/bt-addr.sh \
+		-t "$pkgdir"/usr/libexec/motorola-troika
+	install -Dm644 "$srcdir"/bluetooth-modprobe.conf \
+		"$pkgdir"/usr/lib/modprobe.d/motorola-troika-bluetooth.conf
+	install -Dm644 "$srcdir"/bluetooth.conf \
+		"$pkgdir"/usr/lib/modules-load.d/motorola-troika-bluetooth.conf
 }
 
 phosh() {
@@ -80,4 +91,7 @@ f88e5a2b921c819d569cf7ecff1932a62a8e32ee5b5ee4c2df6e2b73b5819ba77512035ef59a8820
 261ea83cec5f69bba594525a3bf9273d14c05e768c76dd29717ef5bdc33941252df59c2815c2bcde42bd758a69ef1eabbe849bd3297fe8623553f688b9c06353  70-wlan-mac.rules
 797e43627f9ba6fe5ddb909a79425a0ef5617070df4573be8eb3f1394c6a8e045a8165ff457f2a97accfaa3185ce8b53d0263648a59287430ba0bf5f60681d5c  wlan-mac.sh
 8d4ab54a7515022a8497f076b9bb5c033006c2bef5287344ff8dfcf0a3000cc049dad82a3f3b9e538289592d7ba6b142179aeb0b20cc5429d4763e334c2aac2a  wlan.conf
+c112f11f9ee023c992a9145dd4774761503cafdfe77eb35272da81a38556e1cafa42cdd064e07c8eb890488bb07348636377b72a1e1c7165a6ac9ae17a3adb9e  bt-addr.sh
+babaef32455a90fa06facd97bdcae9cd964df7a658c53a82efe54d92c5b04fac8f613c80555f345e6d55e059b04691b76469bd0fa7e868829e15eeedcd4260ed  bluetooth.conf
+61f7d717624ca0c52524d99d9db650b820686c3992933d1cde20c32f77983adc00f1ce696b69c2b65477621c1da85ee4be31728d4c1676aa178fcb46a9ddb43c  bluetooth-modprobe.conf
 "

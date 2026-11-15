@@ -1,6 +1,6 @@
 pkgname=firmware-motorola-troika
 pkgver=1
-pkgrel=0
+pkgrel=1
 pkgdesc="Firmware for Motorola One Action"
 url="https://github.com/MotorolaMobilityLLC/kernel-slsi"
 arch="aarch64"
@@ -17,7 +17,8 @@ _commit="d2ce55392f9f8b4efa332ee4ba205fe513c034b4"
 # Branch lineage-24.0
 _muppets_commit="2dcb53b9f3379322d0c99aff435da3a03359e8ae"
 _muppets_url="https://github.com/TheMuppets/proprietary_vendor_motorola_exynos9610-common/raw/$_muppets_commit/proprietary/vendor/etc/wifi"
-_wlbt_conf="mx140/conf/leman_s620_troika_dualfem/wlan"
+_wlbt_plat="mx140/conf/leman_s620_troika_dualfem"
+_wlbt_conf="$_wlbt_plat/wlan"
 
 source="
 	exynos9610_acpm_fvp-$_commit.fw::$url/raw/$_commit/firmware/exynos9610_acpm_fvp.fw
@@ -27,6 +28,7 @@ source="
 	wlan_sw-$_muppets_commit.hcf::$_muppets_url/$_wlbt_conf/wlan_sw.hcf
 	wlan_t-$_muppets_commit.hcf::$_muppets_url/$_wlbt_conf/wlan_t.hcf
 	wlan_t_sw-$_muppets_commit.hcf::$_muppets_url/$_wlbt_conf/wlan_t_sw.hcf
+	bt-$_muppets_commit.hcf::$_muppets_url/$_wlbt_plat/bluetooth/bt.hcf
 "
 
 package() {
@@ -49,6 +51,12 @@ package() {
 			"$_wlbt"/$_wlbt_conf/$f.hcf
 		ln -s $_wlbt_conf/$f.hcf "$_wlbt"/mx140_$f.hcf
 	done
+
+	# The Bluetooth configuration of the same radio, loaded by the scsc_bt
+	# driver the same way
+	install -Dm644 "$srcdir"/bt-$_muppets_commit.hcf \
+		"$_wlbt"/$_wlbt_plat/bluetooth/bt.hcf
+	ln -s $_wlbt_plat/bluetooth/bt.hcf "$_wlbt"/mx140_bt.hcf
 }
 
 sha512sums="
@@ -59,4 +67,5 @@ bf9bf636ab0519ccc97c1785f0492b3ae2d9556aa30f5f7658b78c9186bba397b0c06a8d9777728e
 0fa06cd81591a2d44873e0c8fb98772dac823ebd9dd87e353b5282af634076b331a28e19a213457515beae3848db437c5db0a2b6f65cea3acbdcc51a1963f0dd  wlan_sw-2dcb53b9f3379322d0c99aff435da3a03359e8ae.hcf
 cc4d86828e07acddf216cc42971bcea64bf428bbf35744e137a367f8d89e65b7944ab1c5bca047b3d3d5a3bea05d0352dc44b9590af2434575b6f13eb523defa  wlan_t-2dcb53b9f3379322d0c99aff435da3a03359e8ae.hcf
 6eacb72fa99e1f6b382c72623af9782361b89a9e0979e08f50ef3d7a6db3d557e48b3fca10b1527f6dd4f2528c3eadc7d2012747b237159e564ffd9052a6647c  wlan_t_sw-2dcb53b9f3379322d0c99aff435da3a03359e8ae.hcf
+99837718adfdc8a38249f96f142580cf4e6b664ad5e70acb8aea99a6b9d3d680645ce8ffd4a3331e0b55b741603ef1b267738660724c831f77cb8d835803ba3a  bt-2dcb53b9f3379322d0c99aff435da3a03359e8ae.hcf
 "

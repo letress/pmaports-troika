@@ -1,8 +1,8 @@
 From f73d87ef3d5bde846c2dda71ea0a765f4c6bd822 Mon Sep 17 00:00:00 2001
 From: letress <212964567+letress@users.noreply.github.com>
 Date: Wed, 11 Nov 2026 13:43:28 +0100
-Subject: [PATCH 25/95] clk: samsung: exynos9610: Parent CMGP USI/I2C gates to
- their dividers
+Subject: [PATCH 025/108] clk: samsung: exynos9610: Parent CMGP USI/I2C gates
+ to their dividers
 
 Each CMGP USI and the shared CMGP I2C clock has a mux followed by a
 divider (CLK_CON_DIV_DIV_CLK_CMGP_USI0x, CLK_CON_DIV_DIV_CLK_CMGP_I2C).
